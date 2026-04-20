@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corn Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0"/>
+<style>
+/* ===== THEME ===== */
+:root{
+  --accent:#F5A623;--accent-dim:rgba(245,166,35,0.12);--accent-glow:rgba(245,166,35,0.3);
+  --danger:#E53935;--success:#43A047;
+  --radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-xl:24px;--radius-pill:50px;
+  --sidebar-w:240px;--transition:0.25s cubic-bezier(0.2,0,0,1);
+}
+[data-theme="dark"]{
+  --bg:#0D0D0F;--surface:#161618;--card:#1C1C20;--card-hover:#222228;
+  --border:rgba(255,255,255,0.08);--border-hover:rgba(255,255,255,0.16);
+  --text:#F0F0F4;--text-sec:#888890;--text-dim:#555560;--overlay:rgba(0,0,0,0.7);
+  --sidebar-bg:#111114;--splash-bg:#0D0D0F;--splash-text:#F0F0F4;
+  --mono-bg:rgba(255,255,255,0.04);--toggle-off:#333338;
+  --input-bg:#1C1C20;--input-border:rgba(255,255,255,0.12);
+  --key-bg:#222228;--key-border:#333340;
+}
+[data-theme="light"]{
+  --bg:#F5F4F0;--surface:#EDECEA;--card:#FFFFFF;--card-hover:#F8F7F4;
+  --border:rgba(0,0,0,0.07);--border-hover:rgba(0,0,0,0.14);
+  --text:#1A1A1F;--text-sec:#666670;--text-dim:#AAAAAB;--overlay:rgba(0,0,0,0.4);
+  --sidebar-bg:#E8E7E3;--splash-bg:#FFFFFF;--splash-text:#1A1A1F;
+  --mono-bg:rgba(0,0,0,0.04);--toggle-off:#CCCCCC;
+  --input-bg:#F5F5F5;--input-border:rgba(0,0,0,0.12);
+  --key-bg:#EEEEEE;--key-border:#CCCCCC;
+}
+*{margin:0;padding:0;box-sizing:border-box;outline:none;-webkit-font-smoothing:antialiased;}
+*:not(iframe):not(.no-select){user-select:none;}
+body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;height:100vh;width:100vw;display:flex;overflow:hidden;transition:background 0.3s,color 0.3s;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border-hover);border-radius:4px;}
+
+/* ===== SVG LOGO ===== */
+.corn-svg{display:block;flex-shrink:0;}
+
+/* ===== SPLASH SCREEN ===== */
+#splash{
+  position:fixed;inset:0;z-index:9999;background:var(--splash-bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity 0.8s ease,visibility 0.8s;
+}
+#splash.hidden{opacity:0;visibility:hidden;pointer-events:none;}
+.splash-grid{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(245,166,35,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(245,166,35,0.04) 1px,transparent 1px);
+  background-size:40px 40px;animation:gridFade 3s ease-out forwards;
+}
+.splash-scanlines{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;}
+@keyframes gridFade{from{opacity:0}to{opacity:1}}
+.splash-core{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;animation:splashIn 0.6s cubic-bezier(0.2,0,0,1) both;}
+@keyframes splashIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.splash-logo-wrap{position:relative;margin-bottom:32px;}
+.splash-logo{
+  width:100px;height:100px;
+  background:linear-gradient(135deg,#F5A623,#FF6B00);
+  border-radius:28px;display:flex;align-items:center;justify-content:center;
+  animation:logoBreath 2s ease-in-out infinite;position:relative;
+}
+.splash-logo::before{
+  content:'';position:absolute;inset:-2px;
+  background:linear-gradient(135deg,#F5A623,#FF6B00,#F5A623);
+  border-radius:30px;z-index:-1;animation:rotateBorder 3s linear infinite;opacity:0.5;
+}
+@keyframes logoBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+@keyframes rotateBorder{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.splash-rings{position:absolute;inset:-20px;border-radius:50%;}
+.splash-rings::before,.splash-rings::after{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  border:1px solid rgba(245,166,35,0.2);animation:ringPulse 2s ease-out infinite;
+}
+.splash-rings::after{animation-delay:1s;}
+@keyframes ringPulse{from{transform:scale(1);opacity:0.6}to{transform:scale(2.5);opacity:0}}
+.splash-title{font-size:32px;font-weight:800;color:var(--splash-text);letter-spacing:-0.5px;margin-bottom:6px;}
+.splash-subtitle{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:3px;margin-bottom:40px;text-transform:uppercase;}
+.splash-bar-wrap{width:260px;display:flex;flex-direction:column;gap:10px;}
+.splash-bar-track{width:100%;height:3px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;}
+.splash-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#F5A623,#FF9800);border-radius:4px;transition:width 0.15s linear;box-shadow:0 0 8px rgba(245,166,35,0.6);}
+.splash-log{font-family:'Space Mono',monospace;font-size:10px;color:var(--text-sec);text-align:center;height:16px;white-space:nowrap;overflow:hidden;}
+.splash-pct{font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);text-align:right;}
+
+/* ===== SIDEBAR ===== */
+.sidebar{width:var(--sidebar-w);height:100%;background:var(--sidebar-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 12px;z-index:10;transition:background var(--transition),border-color var(--transition);}
+.brand{display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:28px;}
+.brand-logo{width:36px;height:36px;background:linear-gradient(135deg,#F5A623,#FF6B00);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.brand-name{font-size:15px;font-weight:800;letter-spacing:0.5px;color:var(--text);}
+.brand-ver{font-family:'Space Mono',monospace;font-size:9px;color:var(--accent);letter-spacing:1px;}
+.nav-section-label{font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;padding:0 12px;margin-bottom:6px;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:0 16px;height:48px;margin-bottom:2px;border-radius:var(--radius-md);cursor:pointer;color:var(--text-sec);font-size:14px;font-weight:500;transition:all var(--transition);position:relative;}
+.nav-item:hover{background:var(--border);color:var(--text);}
+.nav-item.active{background:var(--accent-dim);color:var(--accent);font-weight:600;}
+.nav-item.active .material-symbols-rounded{font-variation-settings:'FILL' 1;}
+.nav-item .material-symbols-rounded{font-size:20px;}
+.nav-badge{margin-left:auto;background:var(--accent);color:#000;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;}
+.sidebar-footer{margin-top:auto;padding:12px 12px 0;border-top:1px solid var(--border);}
+.user-row{display:flex;align-items:center;gap:10px;padding:8px 0;}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#F5A623,#FF6B00);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;flex-shrink:0;}
+.user-info{flex:1;}
+.user-name{font-size:13px;font-weight:600;color:var(--text);}
+.user-status{font-size:11px;color:var(--success);}
+
+/* ===== MAIN VIEW ===== */
+.main-view{flex:1;position:relative;overflow:hidden;background:var(--bg);transition:background var(--transition);}
+.page{position:absolute;inset:0;overflow-y:auto;padding:32px 40px;display:none;opacity:0;animation:pageIn 0.3s ease forwards;}
+.page.active{display:block;}
+@keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+.page-title{font-size:26px;font-weight:800;color:var(--text);letter-spacing:-0.5px;}
+.page-subtitle{font-size:13px;color:var(--text-sec);margin-top:3px;}
+
+/* ===== FILTER TABS ===== */
+.filter-row{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;}
+.filter-chip{padding:6px 16px;border-radius:var(--radius-pill);background:var(--card);border:1px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;color:var(--text-sec);transition:all var(--transition);}
+.filter-chip:hover{border-color:var(--border-hover);color:var(--text);}
+.filter-chip.active{background:var(--accent);border-color:var(--accent);color:#000;}
+
+/* ===== EMPTY STATE ===== */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:16px;text-align:center;}
+.empty-state-icon{width:80px;height:80px;border-radius:20px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:8px;}
+.empty-state-title{font-size:18px;font-weight:700;color:var(--text);}
+.empty-state-desc{font-size:13px;color:var(--text-sec);max-width:300px;line-height:1.6;}
+.empty-state-btn{margin-top:8px;padding:10px 24px;border-radius:var(--radius-pill);background:var(--accent);border:none;color:#000;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all var(--transition);}
+.empty-state-btn:hover{background:#FF9800;}
+
+/* ===== GAME GRID ===== */
+.game-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;}
+.game-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:all var(--transition);position:relative;}
+.game-card:hover{border-color:var(--border-hover);transform:translateY(-4px);background:var(--card-hover);}
+.game-card:hover .card-play-overlay{opacity:1;}
+.card-thumb-wrap{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;}
+.card-thumb{width:100%;height:100%;object-fit:cover;transition:transform 0.4s ease;}
+.card-thumb.svg-banner{width:100%;height:100%;}
+.game-card:hover .card-thumb{transform:scale(1.06);}
+.card-play-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity var(--transition);}
+.card-play-overlay .material-symbols-rounded{font-size:48px;color:white;font-variation-settings:'FILL' 1;}
+.card-genre-badge{position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:0.5px;}
+.card-installed-dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 6px rgba(67,160,71,0.6);}
+.card-body{padding:14px 14px 16px;}
+.card-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-dev{font-size:11px;color:var(--text-sec);margin-bottom:12px;}
+.card-btn{width:100%;height:34px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.5px;transition:all var(--transition);}
+.card-btn.install{background:var(--accent-dim);border:1px solid rgba(245,166,35,0.2);color:var(--accent);}
+.card-btn.install:hover{background:var(--accent);color:#000;}
+.card-btn.play{background:var(--accent);color:#000;}
+.card-btn.play:hover{background:#FF9800;}
+.card-btn.installing{background:var(--mono-bg);border:1px solid var(--border);color:var(--text-sec);cursor:not-allowed;}
+
+/* Inline install progress */
+.install-progress-wrap{display:none;margin-top:8px;}
+.install-progress-wrap.show{display:block;}
+.install-prog-top{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:9px;color:var(--text-sec);margin-bottom:4px;}
+.install-prog-track{width:100%;height:3px;background:var(--border);border-radius:4px;overflow:hidden;}
+.install-prog-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#FF9800);border-radius:4px;transition:width 0.2s linear;box-shadow:0 0 6px var(--accent-glow);}
+
+/* ===== DETAIL PANEL ===== */
+#detail-panel{
+  position:absolute;inset:0;background:var(--bg);z-index:100;
+  display:none;flex-direction:column;overflow-y:auto;
+  animation:pageIn 0.3s ease forwards;
+}
+#detail-panel.open{display:flex;}
+.detail-hero{position:relative;width:100%;aspect-ratio:16/6;overflow:hidden;flex-shrink:0;}
+.detail-hero-img{width:100%;height:100%;object-fit:cover;}
+.detail-hero-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
+.detail-back{
+  position:absolute;top:20px;left:20px;z-index:10;
+  width:40px;height:40px;border-radius:10px;
+  background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,0.15);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:white;transition:all var(--transition);
+}
+.detail-back:hover{background:rgba(0,0,0,0.8);}
+.detail-body{padding:28px 40px 40px;flex:1;}
+.detail-title-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
+.detail-game-title{font-size:28px;font-weight:800;color:var(--text);letter-spacing:-0.5px;}
+.detail-tag{padding:4px 12px;border-radius:var(--radius-pill);background:var(--accent-dim);border:1px solid rgba(245,166,35,0.25);color:var(--accent);font-size:11px;font-weight:700;}
+.detail-desc{font-size:14px;color:var(--text-sec);line-height:1.6;margin-bottom:24px;max-width:600px;}
+.detail-action-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.detail-main-btn{
+  display:flex;align-items:center;gap:8px;
+  padding:14px 28px;border-radius:var(--radius-md);
+  background:var(--accent);border:none;cursor:pointer;
+  font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;
+  color:#000;letter-spacing:0.5px;transition:all var(--transition);
+}
+.detail-main-btn:hover{background:#FF9800;transform:translateY(-1px);}
+#detail-install-wrap{display:none;flex:1;max-width:300px;}
+.detail-prog-labels{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:10px;color:var(--text-sec);margin-bottom:6px;}
+.detail-prog-track{width:100%;height:4px;background:var(--border);border-radius:4px;overflow:hidden;}
+#detail-prog-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#FF9800);border-radius:4px;transition:width 0.15s linear;box-shadow:0 0 8px var(--accent-glow);}
+
+/* ===== SETTINGS ===== */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.setting-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;transition:background var(--transition),border-color var(--transition);}
+.setting-card.full-width{grid-column:1/-1;}
+.setting-card-header{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
+.setting-card-icon{width:32px;height:32px;border-radius:var(--radius-sm);background:var(--accent-dim);display:flex;align-items:center;justify-content:center;}
+.setting-card-icon .material-symbols-rounded{font-size:18px;color:var(--accent);}
+.setting-card-title{font-size:13px;font-weight:700;color:var(--text);letter-spacing:0.3px;}
+.setting-card-desc{font-size:11px;color:var(--text-sec);}
+.control-group{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+.control-group:last-child{border-bottom:none;padding-bottom:0;}
+.control-label{font-size:14px;color:var(--text);font-weight:500;}
+.control-sublabel{font-size:11px;color:var(--text-sec);margin-top:2px;}
+.toggle{width:48px;height:28px;background:var(--toggle-off);border-radius:100px;position:relative;cursor:pointer;transition:background 0.3s ease;flex-shrink:0;}
+.toggle::after{content:'';position:absolute;top:4px;left:4px;width:20px;height:20px;background:white;border-radius:50%;transition:transform 0.3s cubic-bezier(0.2,0,0,1);}
+.toggle.active{background:var(--accent);}
+.toggle.active::after{transform:translateX(20px);}
+.setting-slider{-webkit-appearance:none;width:120px;height:4px;background:var(--border);border-radius:4px;cursor:pointer;outline:none;}
+.setting-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);}
+.setting-select{padding:8px 12px;border-radius:var(--radius-sm);background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;cursor:pointer;outline:none;transition:border-color var(--transition);}
+.setting-select:hover{border-color:var(--accent);}
+.monitor-item{margin-bottom:16px;}
+.monitor-item:last-child{margin-bottom:0;}
+.monitor-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.monitor-label span{font-size:13px;color:var(--text-sec);}
+.monitor-val{font-family:'Space Mono',monospace;font-size:12px;color:var(--accent);}
+.monitor-track{height:6px;background:var(--border);border-radius:4px;overflow:hidden;}
+.monitor-fill{height:100%;background:linear-gradient(90deg,var(--accent),#FF9800);border-radius:4px;transition:width 0.5s ease;}
+
+/* Engine Shortcuts Table */
+.shortcut-table{width:100%;border-collapse:collapse;}
+.shortcut-table tr{border-bottom:1px solid var(--border);}
+.shortcut-table tr:last-child{border-bottom:none;}
+.shortcut-table td{padding:10px 0;font-size:13px;}
+.shortcut-table td:first-child{width:40%;}
+.shortcut-table td:last-child{color:var(--text-sec);}
+.kbd-combo{display:inline-flex;align-items:center;gap:4px;}
+.kbd{
+  font-family:'Space Mono',monospace;font-size:10px;font-weight:700;
+  background:var(--key-bg);border:1px solid var(--key-border);
+  color:var(--accent);padding:3px 7px;border-radius:5px;
+  box-shadow:0 2px 0 var(--border-hover);
+}
+.shortcut-category{font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;padding:14px 0 6px;display:block;}
+
+/* ===== GAME SPLASH SCREEN ===== */
+#game-splash{
+  position:fixed;inset:0;z-index:7000;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  background:#000;
+}
+#game-splash.show{display:flex;}
+.gs-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(40px) brightness(0.3);transform:scale(1.1);}
+.gs-core{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:20px;text-align:center;animation:splashIn 0.5s ease both;}
+.gs-icon{width:90px;height:90px;border-radius:22px;overflow:hidden;border:2px solid rgba(245,166,35,0.4);box-shadow:0 0 40px rgba(245,166,35,0.3);}
+.gs-icon img,.gs-icon svg{width:100%;height:100%;object-fit:cover;}
+.gs-badge{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.25);padding:4px 12px;border-radius:20px;}
+.gs-title{font-size:34px;font-weight:800;color:#fff;letter-spacing:-0.5px;}
+.gs-dev{font-size:13px;color:rgba(255,255,255,0.5);}
+.gs-bar-wrap{width:280px;display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+.gs-bar-label{font-family:'Space Mono',monospace;font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:1px;text-transform:uppercase;}
+.gs-bar-track{width:100%;height:3px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;}
+.gs-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#F5A623,#FF9800);border-radius:4px;box-shadow:0 0 8px rgba(245,166,35,0.6);transition:width 0.1s linear;}
+
+/* ===== BOOST SCREEN ===== */
+#boost-screen{
+  position:fixed;inset:0;z-index:7500;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  background:#000;
+}
+#boost-screen.show{display:flex;}
+.boost-rings-wrap{position:relative;width:120px;height:120px;margin-bottom:24px;}
+.boost-ring{
+  position:absolute;inset:0;border-radius:50%;
+  border:2px solid transparent;
+  border-top-color:var(--accent);
+  animation:spin 1s linear infinite;
+}
+.boost-ring:nth-child(2){inset:14px;border-top-color:transparent;border-right-color:#FF9800;animation-duration:0.7s;animation-direction:reverse;}
+.boost-ring:nth-child(3){inset:28px;border-top-color:rgba(245,166,35,0.5);animation-duration:1.4s;}
+.boost-center{position:absolute;inset:38px;border-radius:50%;background:rgba(245,166,35,0.15);display:flex;align-items:center;justify-content:center;}
+.boost-title{font-size:22px;font-weight:800;color:#fff;letter-spacing:2px;text-transform:uppercase;}
+.boost-sub{font-family:'Space Mono',monospace;font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:2px;margin-top:6px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== GAMEPLAY LAYER ===== */
+#game-viewport{position:fixed;inset:0;background:#000;z-index:5000;display:none;}
+#game-frame{width:100%;height:100%;border:none;}
+#game-menu-btn{
+  position:fixed;top:16px;left:16px;width:44px;height:44px;z-index:6000;
+  background:rgba(0,0,0,0.5);backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,0.15);border-radius:12px;
+  display:none;align-items:center;justify-content:center;
+  cursor:pointer;color:white;transition:all var(--transition);
+}
+#game-menu-btn:hover{background:rgba(0,0,0,0.8);border-color:rgba(255,255,255,0.3);}
+#game-menu-btn .material-symbols-rounded{font-size:22px;}
+
+/* Engine Sidebar */
+#engine-sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:300px;
+  background:rgba(13,13,15,0.94);backdrop-filter:blur(24px) saturate(180%);
+  z-index:6001;transform:translateX(-100%);
+  transition:transform 0.35s cubic-bezier(0.2,0,0,1);
+  border-right:1px solid rgba(255,255,255,0.08);
+  display:flex;flex-direction:column;
+}
+#engine-sidebar.open{transform:translateX(0);}
+.esb-header{padding:24px 24px 16px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.esb-logo{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.esb-logo-icon{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#F5A623,#FF6B00);display:flex;align-items:center;justify-content:center;}
+.esb-title{font-size:13px;font-weight:700;color:white;}
+.esb-subtitle{font-family:'Space Mono',monospace;font-size:9px;color:#F5A623;letter-spacing:2px;text-transform:uppercase;}
+.esb-game-name{font-size:18px;font-weight:800;color:white;letter-spacing:-0.5px;}
+.esb-status{font-size:11px;color:rgba(255,255,255,0.4);display:flex;align-items:center;gap:4px;margin-top:4px;}
+.esb-dot{width:6px;height:6px;border-radius:50%;background:#43A047;animation:blinkDot 1.5s ease-in-out infinite;}
+@keyframes blinkDot{0%,100%{opacity:1}50%{opacity:0.3}}
+.esb-body{padding:16px 24px;flex:1;display:flex;flex-direction:column;overflow-y:auto;}
+.esb-btn{
+  width:100%;padding:12px 14px;margin-bottom:6px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);
+  border-radius:var(--radius-md);font-family:'Outfit',sans-serif;
+  font-size:13px;font-weight:600;cursor:pointer;color:white;text-align:left;
+  display:flex;align-items:center;gap:10px;transition:all var(--transition);
+}
+.esb-btn:hover{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.15);}
+.esb-btn .material-symbols-rounded{font-size:18px;color:rgba(255,255,255,0.6);}
+.esb-btn.primary{background:rgba(245,166,35,0.15);border-color:rgba(245,166,35,0.3);color:#F5A623;}
+.esb-btn.primary:hover{background:rgba(245,166,35,0.25);}
+.esb-btn.primary .material-symbols-rounded{color:#F5A623;font-variation-settings:'FILL' 1;}
+.esb-btn.danger{background:rgba(229,57,53,0.1);border-color:rgba(229,57,53,0.2);color:#EF5350;}
+.esb-btn.danger:hover{background:rgba(229,57,53,0.2);}
+.esb-btn.danger .material-symbols-rounded{color:#EF5350;}
+.esb-divider{height:1px;background:rgba(255,255,255,0.06);margin:10px 0;}
+.esb-section-label{font-size:10px;font-weight:700;color:rgba(255,255,255,0.25);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+
+/* Resolution chips */
+.esb-res-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;}
+.res-chip{padding:8px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);font-family:'Space Mono',monospace;font-size:10px;color:rgba(255,255,255,0.5);text-align:center;cursor:pointer;transition:all var(--transition);}
+.res-chip:hover,.res-chip.active{background:rgba(245,166,35,0.15);border-color:rgba(245,166,35,0.4);color:#F5A623;}
+
+/* Mute row */
+.esb-mute-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;}
+.esb-mute-label{font-size:13px;color:rgba(255,255,255,0.6);}
+.esb-toggle{width:44px;height:24px;background:rgba(255,255,255,0.15);border-radius:100px;position:relative;cursor:pointer;transition:background 0.3s;}
+.esb-toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:white;border-radius:50%;transition:transform 0.3s;}
+.esb-toggle.active{background:#F5A623;}
+.esb-toggle.active::after{transform:translateX(20px);}
+
+/* Display Panel */
+.display-section{margin-top:4px;}
+.display-slider-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.display-slider-label{font-size:12px;color:rgba(255,255,255,0.5);width:80px;flex-shrink:0;}
+.display-slider{
+  -webkit-appearance:none;flex:1;height:4px;
+  background:rgba(255,255,255,0.12);border-radius:4px;cursor:pointer;outline:none;
+}
+.display-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#F5A623;cursor:pointer;border:2px solid #000;}
+.display-val{font-family:'Space Mono',monospace;font-size:10px;color:#F5A623;width:34px;text-align:right;flex-shrink:0;}
+.display-reset-btn{
+  width:100%;padding:8px;margin-top:4px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);
+  border-radius:8px;font-family:'Outfit',sans-serif;font-size:12px;
+  color:rgba(255,255,255,0.5);cursor:pointer;transition:all var(--transition);
+}
+.display-reset-btn:hover{background:rgba(255,255,255,0.1);color:white;}
+
+/* FPS */
+.esb-fps{font-family:'Space Mono',monospace;font-size:11px;color:rgba(255,255,255,0.3);margin-top:auto;padding-top:12px;text-align:center;}
+.esb-fps span{color:#43A047;}
+
+/* ===== TOAST ===== */
+#toast{
+  position:fixed;bottom:24px;right:24px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-md);padding:14px 20px;z-index:9000;
+  display:flex;align-items:center;gap:12px;
+  font-size:14px;font-weight:500;color:var(--text);
+  transform:translateY(80px);opacity:0;
+  transition:all 0.3s cubic-bezier(0.2,0,0,1);min-width:240px;
+}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast .material-symbols-rounded{color:var(--success);font-variation-settings:'FILL' 1;}
+.section-label{font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;}
+</style>
+</head>
+<body>
+
+<!-- ===== SPLASH (APP BOOT) ===== -->
+<div id="splash">
+  <div class="splash-grid"></div>
+  <div class="splash-scanlines"></div>
+  <div class="splash-core">
+    <div class="splash-logo-wrap">
+      <div class="splash-logo">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M28 6 C26 6 22 10 22 20 C22 32 28 44 28 44 C28 44 34 32 34 20 C34 10 30 6 28 6Z" fill="#FFF8E0"/>
+          <ellipse cx="28" cy="26" rx="8" ry="14" fill="#FFF3C0"/>
+          <ellipse cx="24" cy="22" rx="3" ry="2.5" fill="#F5A623" opacity="0.9"/>
+          <ellipse cx="32" cy="22" rx="3" ry="2.5" fill="#F5A623" opacity="0.9"/>
+          <ellipse cx="24" cy="28" rx="3" ry="2.5" fill="#F5A623" opacity="0.9"/>
+          <ellipse cx="32" cy="28" rx="3" ry="2.5" fill="#F5A623" opacity="0.9"/>
+          <ellipse cx="24" cy="34" rx="3" ry="2.5" fill="#F5A623" opacity="0.9"/>
+          <ellipse cx="32" cy="34" rx="3" ry="2.5" fill="#F5A623" opacity="0.9"/>
+          <path d="M20 16 Q12 18 14 30" stroke="#4CAF50" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M36 16 Q44 18 42 30" stroke="#4CAF50" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M25 9 Q22 5 20 2" stroke="#E8C547" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M28 8 Q28 4 28 1" stroke="#E8C547" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M31 9 Q34 5 36 2" stroke="#E8C547" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="splash-rings"></div>
+    </div>
+    <div class="splash-title">Corn Engine</div>
+    <div class="splash-subtitle">Studio &middot; v4.0.0 Stable</div>
+    <div class="splash-bar-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="splash-log" id="splash-log">Booting kernel...</div>
+        <div class="splash-pct" id="splash-pct">0%</div>
+      </div>
+      <div class="splash-bar-track">
+        <div class="splash-bar-fill" id="splash-fill"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SIDEBAR ===== -->
+<div class="sidebar">
+  <div class="brand">
+    <div class="brand-logo">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="11" cy="13" rx="5" ry="7" fill="#FFF3C0"/>
+        <ellipse cx="9" cy="11" rx="1.8" ry="1.5" fill="#F5A623"/>
+        <ellipse cx="13" cy="11" rx="1.8" ry="1.5" fill="#F5A623"/>
+        <ellipse cx="9" cy="15" rx="1.8" ry="1.5" fill="#F5A623"/>
+        <ellipse cx="13" cy="15" rx="1.8" ry="1.5" fill="#F5A623"/>
+        <path d="M7.5 8 Q4 9 5 15" stroke="#4CAF50" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        <path d="M14.5 8 Q18 9 17 15" stroke="#4CAF50" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        <path d="M10 5.5 Q9 3 8 2" stroke="#E8C547" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M11 5 Q11 3 11 1.5" stroke="#E8C547" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M12 5.5 Q13 3 14 2" stroke="#E8C547" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="brand-name">CORN STUDIO</div>
+      <div class="brand-ver">ENGINE v4.0</div>
+    </div>
+  </div>
+
+  <div class="nav-section-label" style="margin-bottom:8px;">Navigate</div>
+  <div class="nav-item active" id="nav-library" onclick="app.nav('library')">
+    <span class="material-symbols-rounded">library_books</span>
+    Library
+    <span class="nav-badge" id="installed-count">0</span>
+  </div>
+  <div class="nav-item" id="nav-store" onclick="app.nav('store')">
+    <span class="material-symbols-rounded">storefront</span>
+    Store
+  </div>
+  <div class="nav-item" id="nav-settings" onclick="app.nav('settings')">
+    <span class="material-symbols-rounded">tune</span>
+    Settings
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="user-row">
+      <div class="avatar">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="7" r="4" fill="#000"/><path d="M2 17 Q2 13 9 13 Q16 13 16 17" stroke="#000" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </div>
+      <div class="user-info">
+        <div class="user-name">Pengguna</div>
+        <div class="user-status">&#9679; Online</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN VIEW ===== -->
+<div class="main-view">
+
+  <!-- LIBRARY PAGE -->
+  <div id="page-library" class="page active">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Library</div>
+        <div class="page-subtitle">Game yang sudah diinstal</div>
+      </div>
+    </div>
+    <div class="filter-row">
+      <div class="filter-chip active" onclick="app.filterGames('all',this,'library')">Semua</div>
+      <div class="filter-chip" onclick="app.filterGames('FPS',this,'library')">FPS</div>
+      <div class="filter-chip" onclick="app.filterGames('Arcade',this,'library')">Arcade</div>
+      <div class="filter-chip" onclick="app.filterGames('Strategy',this,'library')">Strategy</div>
+      <div class="filter-chip" onclick="app.filterGames('Puzzle',this,'library')">Puzzle</div>
+      <div class="filter-chip" onclick="app.filterGames('Party',this,'library')">Party</div>
+    </div>
+    <div id="library-empty" class="empty-state" style="display:none;">
+      <div class="empty-state-icon">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="10" width="28" height="22" rx="4" stroke="var(--text-dim)" stroke-width="2" fill="none"/>
+          <path d="M13 20 L20 14 L27 20 L20 26Z" stroke="var(--text-dim)" stroke-width="1.5" fill="none"/>
+          <circle cx="20" cy="32" r="2" fill="var(--text-dim)"/>
+        </svg>
+      </div>
+      <div class="empty-state-title">Library Kosong</div>
+      <div class="empty-state-desc">Belum ada game yang terinstal. Kunjungi Store untuk menemukan dan menginstal game.</div>
+      <button class="empty-state-btn" onclick="app.nav('store')">
+        <span class="material-symbols-rounded" style="font-size:16px;">storefront</span>
+        Buka Store
+      </button>
+    </div>
+    <div class="game-grid" id="game-grid-library"></div>
+  </div>
+
+  <!-- STORE PAGE -->
+  <div id="page-store" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Store</div>
+        <div class="page-subtitle">Temukan dan instal game baru</div>
+      </div>
+    </div>
+    <div class="filter-row">
+      <div class="filter-chip active" onclick="app.filterGames('all',this,'store')">Semua</div>
+      <div class="filter-chip" onclick="app.filterGames('FPS',this,'store')">FPS</div>
+      <div class="filter-chip" onclick="app.filterGames('Arcade',this,'store')">Arcade</div>
+      <div class="filter-chip" onclick="app.filterGames('Strategy',this,'store')">Strategy</div>
+      <div class="filter-chip" onclick="app.filterGames('Puzzle',this,'store')">Puzzle</div>
+      <div class="filter-chip" onclick="app.filterGames('Party',this,'store')">Party</div>
+    </div>
+    <div class="game-grid" id="game-grid-store"></div>
+  </div>
+
+  <!-- SETTINGS PAGE -->
+  <div id="page-settings" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Settings</div>
+        <div class="page-subtitle">Konfigurasi engine &amp; performa</div>
+      </div>
+    </div>
+    <div class="settings-grid">
+
+      <!-- Grafis & Rendering -->
+      <div class="setting-card">
+        <div class="setting-card-header">
+          <div class="setting-card-icon"><span class="material-symbols-rounded">monitor</span></div>
+          <div>
+            <div class="setting-card-title">Grafis &amp; Rendering</div>
+            <div class="setting-card-desc">Kualitas visual &amp; performa GPU</div>
+          </div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Hardware Acceleration</div><div class="control-sublabel">Gunakan GPU untuk rendering</div></div>
+          <div class="toggle active" onclick="app.toggleSetting(this,'gpu')"></div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">FPS Overlay</div><div class="control-sublabel">Counter FPS di sudut layar</div></div>
+          <div class="toggle" onclick="app.toggleSetting(this,'fps')"></div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Anti-Aliasing</div><div class="control-sublabel">Haluskan tepi gambar</div></div>
+          <div class="toggle active" onclick="app.toggleSetting(this,'aa')"></div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Kualitas Render</div><div class="control-sublabel">Resolusi frame buffer</div></div>
+          <select class="setting-select" onchange="app.setResolution(this.value)">
+            <option value="1">1080p (Asli)</option>
+            <option value="0.75">720p (Performa)</option>
+            <option value="0.5">540p (Hemat)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Audio -->
+      <div class="setting-card">
+        <div class="setting-card-header">
+          <div class="setting-card-icon"><span class="material-symbols-rounded">volume_up</span></div>
+          <div>
+            <div class="setting-card-title">Audio</div>
+            <div class="setting-card-desc">Pengaturan suara &amp; efek</div>
+          </div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Aktifkan Audio</div></div>
+          <div class="toggle active" onclick="app.toggleSetting(this,'audio')"></div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Volume Utama</div></div>
+          <input type="range" class="setting-slider" min="0" max="100" value="80">
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Efek Suara</div></div>
+          <input type="range" class="setting-slider" min="0" max="100" value="100">
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Musik Latar</div></div>
+          <input type="range" class="setting-slider" min="0" max="100" value="60">
+        </div>
+      </div>
+
+      <!-- Tampilan Engine -->
+      <div class="setting-card">
+        <div class="setting-card-header">
+          <div class="setting-card-icon"><span class="material-symbols-rounded">palette</span></div>
+          <div>
+            <div class="setting-card-title">Tampilan</div>
+            <div class="setting-card-desc">Tema, skala, &amp; layar</div>
+          </div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Mode Gelap</div><div class="control-sublabel">Aktif = Gelap, Nonaktif = Terang</div></div>
+          <div class="toggle active" id="theme-toggle" onclick="app.toggleTheme(this)"></div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Fullscreen Otomatis</div><div class="control-sublabel">Saat game diluncurkan</div></div>
+          <div class="toggle active" onclick="app.toggleSetting(this,'fullscreen')"></div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Animasi UI</div><div class="control-sublabel">Transisi &amp; efek antarmuka</div></div>
+          <div class="toggle active" onclick="app.toggleSetting(this,'uiAnim')"></div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Skala UI</div></div>
+          <select class="setting-select">
+            <option>100% (Default)</option>
+            <option>90% (Compact)</option>
+            <option>110% (Large)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Jaringan -->
+      <div class="setting-card">
+        <div class="setting-card-header">
+          <div class="setting-card-icon"><span class="material-symbols-rounded">wifi</span></div>
+          <div>
+            <div class="setting-card-title">Jaringan</div>
+            <div class="setting-card-desc">Koneksi &amp; latensi</div>
+          </div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Low Latency Mode</div><div class="control-sublabel">Prioritaskan paket game</div></div>
+          <div class="toggle active" onclick="app.toggleSetting(this,'latency')"></div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Auto Reconnect</div><div class="control-sublabel">Sambung ulang jika terputus</div></div>
+          <div class="toggle active" onclick="app.toggleSetting(this,'reconnect')"></div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Kompresi Data</div><div class="control-sublabel">Kurangi penggunaan bandwidth</div></div>
+          <div class="toggle" onclick="app.toggleSetting(this,'compress')"></div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Timeout</div></div>
+          <select class="setting-select">
+            <option>5 detik</option><option>10 detik</option><option>30 detik</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- System Monitor -->
+      <div class="setting-card">
+        <div class="setting-card-header">
+          <div class="setting-card-icon"><span class="material-symbols-rounded">developer_board</span></div>
+          <div>
+            <div class="setting-card-title">System Monitor</div>
+            <div class="setting-card-desc">Penggunaan sumber daya real-time</div>
+          </div>
+        </div>
+        <div class="monitor-item">
+          <div class="monitor-label"><span>CPU Usage</span><span class="monitor-val" id="cpu-val">0%</span></div>
+          <div class="monitor-track"><div class="monitor-fill" id="cpu-bar" style="width:0%"></div></div>
+        </div>
+        <div class="monitor-item">
+          <div class="monitor-label"><span>Memory</span><span class="monitor-val" id="mem-val">0 MB</span></div>
+          <div class="monitor-track"><div class="monitor-fill" id="mem-bar" style="width:0%"></div></div>
+        </div>
+        <div class="monitor-item">
+          <div class="monitor-label"><span>GPU Load</span><span class="monitor-val" id="gpu-val">0%</span></div>
+          <div class="monitor-track"><div class="monitor-fill" id="gpu-bar" style="width:0%"></div></div>
+        </div>
+        <div class="monitor-item">
+          <div class="monitor-label"><span>Network</span><span class="monitor-val" id="net-val">0 ms</span></div>
+          <div class="monitor-track"><div class="monitor-fill" id="net-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- Privasi & Keamanan -->
+      <div class="setting-card">
+        <div class="setting-card-header">
+          <div class="setting-card-icon"><span class="material-symbols-rounded">shield</span></div>
+          <div>
+            <div class="setting-card-title">Privasi &amp; Keamanan</div>
+            <div class="setting-card-desc">Lindungi data &amp; sesi bermain</div>
+          </div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Simpan Riwayat</div></div>
+          <div class="toggle active" onclick="app.toggleSetting(this,'history')"></div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Telemetri Anonim</div></div>
+          <div class="toggle" onclick="app.toggleSetting(this,'telemetry')"></div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Blokir Iklan (in-game)</div></div>
+          <div class="toggle active" onclick="app.toggleSetting(this,'adblock')"></div>
+        </div>
+        <div class="control-group">
+          <div><div class="control-label">Kunci dengan PIN</div></div>
+          <div class="toggle" onclick="app.toggleSetting(this,'pin')"></div>
+        </div>
+      </div>
+
+      <!-- Engine Shortcuts - full width -->
+      <div class="setting-card full-width">
+        <div class="setting-card-header">
+          <div class="setting-card-icon"><span class="material-symbols-rounded">keyboard_command_key</span></div>
+          <div>
+            <div class="setting-card-title">Pintasan Keyboard Engine</div>
+            <div class="setting-card-desc">Shortcut untuk mengontrol Corn Engine saat berjalan — bukan kontrol dalam game</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 40px;">
+          <div>
+            <span class="shortcut-category">Manajemen Game</span>
+            <table class="shortcut-table">
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">ESC</span></span></td>
+                <td>Buka / Tutup menu engine</td>
+              </tr>
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">Ctrl</span>+<span class="kbd">R</span></span></td>
+                <td>Restart game yang aktif</td>
+              </tr>
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">Ctrl</span>+<span class="kbd">Q</span></span></td>
+                <td>Keluar dari game</td>
+              </tr>
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">Ctrl</span>+<span class="kbd">W</span></span></td>
+                <td>Tutup tab / game aktif</td>
+              </tr>
+            </table>
+
+            <span class="shortcut-category">Tampilan &amp; Layar</span>
+            <table class="shortcut-table">
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">F11</span></span></td>
+                <td>Toggle fullscreen</td>
+              </tr>
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">Alt</span>+<span class="kbd">Enter</span></span></td>
+                <td>Windowed / Fullscreen</td>
+              </tr>
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">Ctrl</span>+<span class="kbd">D</span></span></td>
+                <td>Buka panel Display</td>
+              </tr>
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">Ctrl</span>+<span class="kbd">+</span></span></td>
+                <td>Zoom in tampilan</td>
+              </tr>
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">Ctrl</span>+<span class="kbd">-</span></span></td>
+                <td>Zoom out tampilan</td>
+              </tr>
+            </table>
+          </div>
+
+          <div>
+            <span class="shortcut-category">Audio &amp; Media</span>
+            <table class="shortcut-table">
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">Ctrl</span>+<span class="kbd">M</span></span></td>
+                <td>Mute / Unmute audio</td>
+              </tr>
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">Ctrl</span>+<span class="kbd">Up</span></span></td>
+                <td>Naikkan volume engine</td>
+              </tr>
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">Ctrl</span>+<span class="kbd">Down</span></span></td>
+                <td>Turunkan volume engine</td>
+              </tr>
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">F12</span></span></td>
+                <td>Screenshot layar</td>
+              </tr>
+            </table>
+
+            <span class="shortcut-category">Navigasi Engine</span>
+            <table class="shortcut-table">
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">Ctrl</span>+<span class="kbd">1</span></span></td>
+                <td>Buka halaman Library</td>
+              </tr>
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">Ctrl</span>+<span class="kbd">2</span></span></td>
+                <td>Buka halaman Store</td>
+              </tr>
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">Ctrl</span>+<span class="kbd">3</span></span></td>
+                <td>Buka Settings</td>
+              </tr>
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">Ctrl</span>+<span class="kbd">F</span></span></td>
+                <td>Cari game di Store</td>
+              </tr>
+              <tr>
+                <td><span class="kbd-combo"><span class="kbd">Ctrl</span>+<span class="kbd">Shift</span>+<span class="kbd">P</span></span></td>
+                <td>Command palette engine</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DETAIL PANEL -->
+  <div id="detail-panel">
+    <div class="detail-hero">
+      <div class="detail-back" onclick="app.closeDetail()">
+        <span class="material-symbols-rounded">arrow_back</span>
+      </div>
+      <img id="detail-img" class="detail-hero-img" src="" onerror="this.style.display='none';document.getElementById('detail-hero-fallback').style.display='flex'">
+      <div id="detail-hero-fallback" class="detail-hero-fallback" style="display:none;"></div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-title-row">
+        <h1 class="detail-game-title" id="detail-title">Title</h1>
+        <div class="detail-tag" id="detail-tag">GENRE</div>
+      </div>
+      <p class="detail-desc" id="detail-desc">Description</p>
+      <div class="detail-action-row">
+        <button class="detail-main-btn" id="detail-btn">
+          <span class="material-symbols-rounded" id="detail-btn-icon">download</span>
+          <span id="detail-btn-text">INSTALL</span>
+        </button>
+        <div id="detail-install-wrap">
+          <div class="detail-prog-labels">
+            <span id="detail-step">Mempersiapkan...</span>
+            <span id="detail-pct">0%</span>
+          </div>
+          <div class="detail-prog-track"><div id="detail-prog-fill"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main-view -->
+
+<!-- ===== GAME SPLASH SCREEN ===== -->
+<div id="game-splash">
+  <div class="gs-bg" id="gs-bg"></div>
+  <div class="gs-core">
+    <div class="gs-icon" id="gs-icon"></div>
+    <div class="gs-badge" id="gs-badge">GAME</div>
+    <div class="gs-title" id="gs-title">Loading...</div>
+    <div class="gs-dev" id="gs-dev">Developer</div>
+    <div class="gs-bar-wrap">
+      <div class="gs-bar-label">Memuat game...</div>
+      <div class="gs-bar-track"><div class="gs-bar-fill" id="gs-fill"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BOOST SCREEN ===== -->
+<div id="boost-screen">
+  <div class="boost-rings-wrap">
+    <div class="boost-ring"></div>
+    <div class="boost-ring"></div>
+    <div class="boost-ring"></div>
+    <div class="boost-center">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path d="M14 4 L7 16 H13 L10 24 L21 12 H15 L18 4Z" fill="#F5A623"/>
+      </svg>
+    </div>
+  </div>
+  <div class="boost-title">CORN BOOST</div>
+  <div class="boost-sub">Mengoptimalkan Performa...</div>
+</div>
+
+<!-- ===== GAMEPLAY LAYER ===== -->
+<div id="game-viewport">
+  <iframe id="game-frame" allowfullscreen allow="fullscreen"></iframe>
+</div>
+
+<!-- Floating Game Menu Button (top-left) -->
+<div id="game-menu-btn" onclick="app.engine.toggleMenu()">
+  <span class="material-symbols-rounded" id="menu-btn-icon">menu</span>
+</div>
+
+<!-- Engine Sidebar (Left) -->
+<div id="engine-sidebar">
+  <div class="esb-header">
+    <div class="esb-logo">
+      <div class="esb-logo-icon">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <ellipse cx="9" cy="11" rx="4" ry="5.5" fill="#FFF3C0"/>
+          <ellipse cx="7.5" cy="10" rx="1.4" ry="1.2" fill="#F5A623"/>
+          <ellipse cx="10.5" cy="10" rx="1.4" ry="1.2" fill="#F5A623"/>
+          <ellipse cx="7.5" cy="13" rx="1.4" ry="1.2" fill="#F5A623"/>
+          <ellipse cx="10.5" cy="13" rx="1.4" ry="1.2" fill="#F5A623"/>
+          <path d="M6 6.5 Q3.5 7 4 12" stroke="#4CAF50" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+          <path d="M12 6.5 Q14.5 7 14 12" stroke="#4CAF50" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+      <div>
+        <div class="esb-title">Corn Engine</div>
+        <div class="esb-subtitle">Game Menu</div>
+      </div>
+    </div>
+    <div class="esb-game-name" id="esb-game-name">Game</div>
+    <div class="esb-status"><div class="esb-dot"></div> Sedang Berjalan</div>
+  </div>
+
+  <div class="esb-body">
+    <button class="esb-btn primary" onclick="app.engine.closeMenu()">
+      <span class="material-symbols-rounded">play_circle</span>
+      Lanjutkan Game
+    </button>
+    <button class="esb-btn" onclick="app.engine.restart()">
+      <span class="material-symbols-rounded">refresh</span>
+      Restart Game
+    </button>
+
+    <div class="esb-divider"></div>
+    <div class="esb-section-label">Audio</div>
+    <div class="esb-mute-row">
+      <span class="esb-mute-label">Suara Game</span>
+      <div class="esb-toggle active" onclick="app.engine.toggleMute(this)"></div>
+    </div>
+
+    <div class="esb-divider"></div>
+    <div class="esb-section-label">Resolusi</div>
+    <div class="esb-res-grid">
+      <div class="res-chip active" onclick="app.engine.setRes(1,this)">1080p</div>
+      <div class="res-chip" onclick="app.engine.setRes(0.75,this)">720p</div>
+      <div class="res-chip" onclick="app.engine.setRes(0.5,this)">540p</div>
+    </div>
+
+    <div class="esb-divider"></div>
+    <div class="esb-section-label">
+      <span style="display:flex;align-items:center;gap:6px;">
+        <span class="material-symbols-rounded" style="font-size:13px;color:rgba(255,255,255,0.4);">tune</span>
+        Display
+      </span>
+    </div>
+    <div class="display-section">
+      <div class="display-slider-row">
+        <span class="display-slider-label">Kecerahan</span>
+        <input type="range" class="display-slider" min="50" max="200" value="100" id="sl-brightness" oninput="app.engine.applyDisplay()">
+        <span class="display-val" id="val-brightness">100%</span>
+      </div>
+      <div class="display-slider-row">
+        <span class="display-slider-label">Kontras</span>
+        <input type="range" class="display-slider" min="50" max="200" value="100" id="sl-contrast" oninput="app.engine.applyDisplay()">
+        <span class="display-val" id="val-contrast">100%</span>
+      </div>
+      <div class="display-slider-row">
+        <span class="display-slider-label">Saturasi</span>
+        <input type="range" class="display-slider" min="0" max="300" value="100" id="sl-saturate" oninput="app.engine.applyDisplay()">
+        <span class="display-val" id="val-saturate">100%</span>
+      </div>
+      <div class="display-slider-row">
+        <span class="display-slider-label">Hue</span>
+        <input type="range" class="display-slider" min="0" max="360" value="0" id="sl-hue" oninput="app.engine.applyDisplay()">
+        <span class="display-val" id="val-hue">0deg</span>
+      </div>
+      <div class="display-slider-row">
+        <span class="display-slider-label">Gamma</span>
+        <input type="range" class="display-slider" min="50" max="200" value="100" id="sl-gamma" oninput="app.engine.applyDisplay()">
+        <span class="display-val" id="val-gamma">100%</span>
+      </div>
+      <button class="display-reset-btn" onclick="app.engine.resetDisplay()">
+        Reset Display
+      </button>
+    </div>
+
+    <div style="margin-top:auto;padding-top:12px;">
+      <button class="esb-btn danger" onclick="app.engine.quit()">
+        <span class="material-symbols-rounded">power_settings_new</span>
+        Keluar dari Game
+      </button>
+    </div>
+    <div class="esb-fps" id="esb-fps">ENGINE &middot; <span>60</span> FPS &middot; CORN v4.0</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast">
+  <span class="material-symbols-rounded">check_circle</span>
+  <span id="toast-msg">Berhasil!</span>
+</div>
+
+<script>
+/* ===== GAME DATABASE ===== */
+const DB = [
+  {id:1,title:"Shell Shockers",dev:"Blue Wizard Digital",cat:"FPS",url:"https://shellshock.io/",img:"https://shellshock.io/img/ss-preview.jpg",color:"135deg,#1a1a2e,#16213e",desc:"FPS unik bertema telur — tembak musuh dalam arena online yang intens. Ganti senjata, kuasai peta, jadilah telur terkuat!",installed:false},
+  {id:2,title:"Krunker.io",dev:"Yendis Entertainment",cat:"FPS",url:"https://krunker.io/",img:"",color:"135deg,#1a1a1a,#2d2d2d",desc:"Shooter blocky super cepat dengan mekanik gerakan yang adiktif. Ratusan peta, banyak mode permainan, dan kompetisi tinggi.",installed:false},
+  {id:3,title:"Deadshot.io",dev:"Deadshot Team",cat:"FPS",url:"https://deadshot.io/",img:"",color:"135deg,#0f0c29,#302b63",desc:"Platform aim training sekaligus game taktis. Asah refleks & akurasi melawan pemain dari seluruh dunia.",installed:false},
+  {id:4,title:"1v1.LOL",dev:"JustPlay.LOL",cat:"FPS",url:"https://1v1.lol/",img:"",color:"135deg,#141e30,#243b55",desc:"Bangun & tembak layaknya Fortnite! Latih building skill, refleks, dan strategi dalam duel 1v1 yang sengit.",installed:false},
+  {id:5,title:"Slither.io",dev:"Lowtech Studios",cat:"Arcade",url:"https://slither.io/",img:"",color:"135deg,#0a3d0a,#1a6b1a",desc:"Ular kasual yang adiktif — makan bola cahaya, tumbuh besar, dan jebak ular lain agar menabrak tubuhmu.",installed:false},
+  {id:6,title:"Agar.io",dev:"Miniclip",cat:"Arcade",url:"https://agar.io/",img:"",color:"135deg,#003366,#005599",desc:"Makan sel lebih kecil untuk tumbuh, hindari yang lebih besar. Strategi split dan ejecting membuatnya dalam.",installed:false},
+  {id:7,title:"Diep.io",dev:"Matheus Valadares",cat:"Arcade",url:"https://diep.io/",img:"",color:"135deg,#1a1a3e,#2a2a6e",desc:"Tank shooter dengan sistem upgrade yang dalam. Pilih build, hancurkan bentuk geometri, dominasi arena.",installed:false},
+  {id:8,title:"Paper.io 2",dev:"Voodoo",cat:"Strategy",url:"https://paper-io.com/",img:"",color:"135deg,#2c3e50,#4ca1af",desc:"Kuasai wilayah dengan menggambar garis. Awas — musuh bisa memotong jalurmu! Strategi dan refleks adalah kunci.",installed:false},
+  {id:9,title:"Splix.io",dev:"Erik Fredriksen",cat:"Strategy",url:"https://splix.io/",img:"",color:"135deg,#134e5e,#71b280",desc:"Rebut area, jaga ekor, dan serang wilayah lawan. Game territory klasik yang simpel namun sangat kompetitif.",installed:false},
+  {id:10,title:"Wormate.io",dev:"Wormax Team",cat:"Arcade",url:"https://wormate.io/",img:"",color:"135deg,#4a1942,#c0392b",desc:"Gabungan Slither dan Snake dengan power-up unik — makan kue, donat, dan candy untuk tumbuh besar!",installed:false},
+  {id:11,title:"Powerline.io",dev:"Powerline Team",cat:"Arcade",url:"https://powerline.io/",img:"",color:"135deg,#0a0a0a,#1a1a3e",desc:"Snake neon super cepat — bergerak di jalur cahaya, potong jalur lawan, jadilah garis terpanjang.",installed:false},
+  {id:12,title:"Skribbl.io",dev:"ticedev",cat:"Party",url:"https://skribbl.io/",img:"",color:"135deg,#fc5c7d,#6a3093",desc:"Game menggambar & menebak yang seru bersama teman! Giliran menggambar, giliran menebak — siapa tertinggi?",installed:false},
+  {id:13,title:"Gartic.io",dev:"Gartic Team",cat:"Party",url:"https://gartic.io/",img:"",color:"135deg,#f7971e,#ffd200",desc:"Game Pictionary online dengan berbagai mode menarik termasuk telefon, animasi, dan bom. Bermain bareng 100 orang!",installed:false},
+  {id:14,title:"Coastal World",dev:"Superlative",cat:"MMO",url:"https://coastalworld.com/",img:"https://coastalworld.com/share/share_en.png?v=23301b69",color:"135deg,#0052d4,#6fb1fc",desc:"MMO sosial 3D yang santai. Jelajahi pulau tropis, bertemu pemain lain, kumpulkan item, bangun kehidupan virtual.",installed:false},
+  {id:15,title:"Little Big Snake",dev:"LBS Team",cat:"Arcade",url:"https://littlebigsnake.com/",img:"",color:"135deg,#1d4350,#a43931",desc:"Evolusi game ular dengan RPG elements — kumpulkan jiwa, naik level, pilih kemampuan, dominasi peta besar.",installed:false},
+  {id:16,title:"Zombs Royale",dev:"End Game Interactive",cat:"FPS",url:"https://zombsroyale.io/",img:"",color:"135deg,#2d3436,#636e72",desc:"Battle royale top-down 2D yang cepat dan adiktif. 100 pemain, satu pemenang. Cari senjata, jadilah survivor!",installed:false},
+  {id:17,title:"2048",dev:"Gabriele Cirulli",cat:"Puzzle",url:"https://play2048.co/",img:"",color:"135deg,#f6d365,#fda085",desc:"Geser tile dan gabungkan angka hingga mencapai 2048. Game puzzle yang sederhana, elegan, dan sulit dikuasai.",installed:false},
+  {id:18,title:"Wordle",dev:"NYT Games",cat:"Puzzle",url:"https://www.nytimes.com/games/wordle/",img:"",color:"135deg,#538d4e,#1a1a1a",desc:"Tebak kata 5 huruf dalam 6 percobaan. Setiap tebakan memberi petunjuk warna — seberapa cepat kamu bisa menang?",installed:false},
+  {id:19,title:"Chess.com",dev:"Chess.com",cat:"Strategy",url:"https://www.chess.com/play/computer",img:"",color:"135deg,#769656,#eeeed2",desc:"Catur online melawan AI atau pemain lain. Berbagai level kesulitan, analisis permainan, dan turnamen tersedia.",installed:false},
+  {id:20,title:"GeoGuessr Lite",dev:"GeoGuessr",cat:"Puzzle",url:"https://www.geoguessr.com/",img:"",color:"135deg,#1565C0,#42A5F5",desc:"Tebak lokasi dunia dari foto Street View. Uji pengetahuan geografi, budaya, dan kejelian observasimu!",installed:false},
+];
+
+/* ===== BANNER GENERATOR ===== */
+function genBanner(g,w,h){
+  const colors = g.color.split(',').slice(1).map(s=>s.trim());
+  const c1 = colors[0]||'#1a1a2e', c2 = colors[1]||'#16213e';
+  const initials = g.title.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  const catColor = {FPS:'#EF5350',Arcade:'#66BB6A',Strategy:'#42A5F5',Puzzle:'#AB47BC',Party:'#FF7043',MMO:'#26C6DA'}[g.cat]||'#F5A623';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">
+    <defs>
+      <linearGradient id="g${g.id}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c2}"/>
+      </linearGradient>
+      <filter id="n${g.id}"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feBlend mode="overlay" in="SourceGraphic"/></filter>
+    </defs>
+    <rect width="${w}" height="${h}" fill="url(#g${g.id})"/>
+    <rect width="${w}" height="${h}" opacity="0.07" filter="url(#n${g.id})"/>
+    <circle cx="${w*0.75}" cy="${h*0.3}" r="${h*0.7}" fill="rgba(255,255,255,0.04)"/>
+    <circle cx="${w*0.2}" cy="${h*0.8}" r="${h*0.5}" fill="rgba(255,255,255,0.03)"/>
+    <text x="${w/2}" y="${h*0.62}" font-family="system-ui,sans-serif" font-size="${h*0.42}" font-weight="900" text-anchor="middle" fill="rgba(255,255,255,0.12)" letter-spacing="-2">${initials}</text>
+    <rect x="${w*0.5-30}" y="${h*0.78}" width="60" height="4" rx="2" fill="${catColor}" opacity="0.7"/>
+  </svg>`;
+  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+
+function genIcon(g){
+  const colors = g.color.split(',').slice(1).map(s=>s.trim());
+  const c1 = colors[0]||'#1a1a2e', c2 = colors[1]||'#16213e';
+  const initials = g.title.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <defs><linearGradient id="ig${g.id}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs>
+    <rect width="100" height="100" fill="url(#ig${g.id})"/>
+    <text x="50" y="66" font-family="system-ui,sans-serif" font-size="42" font-weight="900" text-anchor="middle" fill="rgba(255,255,255,0.9)">${initials}</text>
+  </svg>`;
+  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+
+/* ===== APP ===== */
+const app = {
+  state:{
+    currentPage:'library',
+    currentFilter:{library:'all',store:'all'},
+    activeGameId:null,
+    settings:{gpu:true,fps:false,aa:true,fullscreen:true,audio:true,masterVol:80,sfxVol:100,musicVol:60,latency:true,reconnect:true,compress:false,history:true,telemetry:false,adblock:true,pin:false,uiAnim:true,muted:false},
+  },
+
+  init(){
+    this.runSplash();
+    this.startMonitor();
+    this.startFPSCounter();
+  },
+
+  /* --- SPLASH (boot) --- */
+  runSplash(){
+    const msgs=['Booting kernel...','Menginisialisasi render engine...','Memuat shader library...','Mengkonfigurasi audio subsystem...','Menghubungkan ke jaringan...','Memuat aset UI...','Siap!'];
+    let p=0, fill=document.getElementById('splash-fill'),log=document.getElementById('splash-log'),pct=document.getElementById('splash-pct');
+    const iv=setInterval(()=>{
+      p+=Math.random()*8+3;
+      if(p>=100)p=100;
+      fill.style.width=p+'%';
+      pct.textContent=Math.floor(p)+'%';
+      log.textContent=msgs[Math.min(Math.floor((p/100)*msgs.length),msgs.length-1)];
+      if(p>=100){
+        clearInterval(iv);
+        setTimeout(()=>{
+          document.getElementById('splash').classList.add('hidden');
+          this.renderAll();
+          this.updateInstalledCount();
+        },600);
+      }
+    },120);
+  },
+
+  /* --- NAV --- */
+  nav(page){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    document.getElementById('page-'+page).classList.add('active');
+    document.getElementById('nav-'+page).classList.add('active');
+    this.state.currentPage=page;
+    this.closeDetail();
+  },
+
+  /* --- RENDER --- */
+  renderAll(){
+    this.renderLibrary();
+    this.renderStore();
+  },
+
+  renderLibrary(){
+    const filter=this.state.currentFilter.library;
+    const grid=document.getElementById('game-grid-library');
+    const empty=document.getElementById('library-empty');
+    let games=DB.filter(g=>g.installed);
+    if(filter!=='all') games=games.filter(g=>g.cat===filter);
+    if(games.length===0){
+      grid.innerHTML='';
+      empty.style.display='flex';
+    } else {
+      empty.style.display='none';
+      grid.innerHTML=games.map(g=>this.buildCard(g,'library')).join('');
+    }
+  },
+
+  renderStore(){
+    const filter=this.state.currentFilter.store;
+    const grid=document.getElementById('game-grid-store');
+    let games=DB;
+    if(filter!=='all') games=games.filter(g=>g.cat===filter);
+    grid.innerHTML=games.map(g=>this.buildCard(g,'store')).join('');
+  },
+
+  buildCard(g,ctx){
+    const banner=g.img?g.img:genBanner(g,400,225);
+    const icon=g.img?g.img:genIcon(g);
+    const btn=g.installed
+      ?`<button class="card-btn play" onclick="event.stopPropagation();app.launchGame(${g.id})">Mainkan</button>`
+      :`<button class="card-btn install" id="cbtn-${g.id}" onclick="event.stopPropagation();app.startInstall(${g.id})">Instal</button>`;
+    const dot=g.installed?`<div class="card-installed-dot"></div>`:'';
+    return `
+    <div class="game-card" onclick="app.openDetail(${g.id})">
+      <div class="card-thumb-wrap">
+        <img class="card-thumb" src="${banner}" alt="${g.title}" draggable="false">
+        <div class="card-play-overlay"><span class="material-symbols-rounded">${g.installed?'play_arrow':'download'}</span></div>
+        <div class="card-genre-badge">${g.cat}</div>
+        ${dot}
+      </div>
+      <div class="card-body">
+        <div class="card-title">${g.title}</div>
+        <div class="card-dev">${g.dev}</div>
+        ${btn}
+        <div class="install-progress-wrap" id="iprog-${g.id}">
+          <div class="install-prog-top">
+            <span id="istep-${g.id}">Mempersiapkan...</span>
+            <span id="ipct-${g.id}">0%</span>
+          </div>
+          <div class="install-prog-track"><div class="install-prog-fill" id="ifill-${g.id}"></div></div>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  updateInstalledCount(){
+    const n=DB.filter(g=>g.installed).length;
+    document.getElementById('installed-count').textContent=n;
+  },
+
+  /* --- FILTER --- */
+  filterGames(cat,el,ctx){
+    el.closest('.filter-row').querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+    el.classList.add('active');
+    this.state.currentFilter[ctx]=cat;
+    if(ctx==='library') this.renderLibrary();
+    else this.renderStore();
+  },
+
+  /* --- DETAIL --- */
+  openDetail(id){
+    const g=DB.find(g=>g.id===id);
+    if(!g) return;
+    const panel=document.getElementById('detail-panel');
+    const banner=g.img?g.img:genBanner(g,1200,400);
+    const heroImg=document.getElementById('detail-img');
+    heroImg.style.display='block';
+    heroImg.src=banner;
+    document.getElementById('detail-hero-fallback').style.display='none';
+    document.getElementById('detail-title').textContent=g.title;
+    document.getElementById('detail-tag').textContent=g.cat;
+    document.getElementById('detail-desc').textContent=g.desc;
+    const btn=document.getElementById('detail-btn');
+    const btnIcon=document.getElementById('detail-btn-icon');
+    const btnText=document.getElementById('detail-btn-text');
+    document.getElementById('detail-install-wrap').style.display='none';
+    if(g.installed){
+      btnIcon.textContent='play_arrow';
+      btnText.textContent='MAINKAN';
+      btn.onclick=()=>this.launchGame(id);
+    } else {
+      btnIcon.textContent='download';
+      btnText.textContent='INSTAL';
+      btn.onclick=()=>this.startInstallDetail(id);
+    }
+    panel.classList.add('open');
+  },
+
+  closeDetail(){
+    document.getElementById('detail-panel').classList.remove('open');
+  },
+
+  /* --- INSTALL (inline, no popup) --- */
+  startInstall(id){
+    const g=DB.find(g=>g.id===id);
+    if(!g||g.installed) return;
+    const btn=document.getElementById('cbtn-'+id);
+    const prog=document.getElementById('iprog-'+id);
+    const fill=document.getElementById('ifill-'+id);
+    const step=document.getElementById('istep-'+id);
+    const pct=document.getElementById('ipct-'+id);
+    if(!btn||!prog) return;
+    btn.disabled=true;
+    btn.className='card-btn installing';
+    btn.textContent='Menginstal...';
+    prog.classList.add('show');
+    const steps=['Mengalokasikan...','Mengunduh...','Memverifikasi...','Mengekstrak...','Menyelesaikan...'];
+    let p=0;
+    const iv=setInterval(()=>{
+      p+=Math.random()*3.5+0.5;
+      if(p>=100)p=100;
+      const si=Math.min(Math.floor((p/100)*steps.length),steps.length-1);
+      fill.style.width=p+'%';
+      pct.textContent=Math.floor(p)+'%';
+      step.textContent=steps[si];
+      if(p>=100){
+        clearInterval(iv);
+        g.installed=true;
+        setTimeout(()=>{
+          prog.classList.remove('show');
+          this.renderAll();
+          this.updateInstalledCount();
+          this.showToast(g.title+' berhasil diinstal!');
+        },500);
+      }
+    },160);
+  },
+
+  startInstallDetail(id){
+    const g=DB.find(g=>g.id===id);
+    if(!g||g.installed) return;
+    const btn=document.getElementById('detail-btn');
+    const iw=document.getElementById('detail-install-wrap');
+    const fill=document.getElementById('detail-prog-fill');
+    const step=document.getElementById('detail-step');
+    const pct=document.getElementById('detail-pct');
+    btn.style.display='none';
+    iw.style.display='block';
+    const steps=['Mengalokasikan...','Mengunduh paket...','Memverifikasi data...','Mengekstrak file...','Menyelesaikan...'];
+    let p=0;
+    const iv=setInterval(()=>{
+      p+=Math.random()*3+1;
+      if(p>=100)p=100;
+      const si=Math.min(Math.floor((p/100)*steps.length),steps.length-1);
+      fill.style.width=p+'%';
+      pct.textContent=Math.floor(p)+'%';
+      step.textContent=steps[si];
+      if(p>=100){
+        clearInterval(iv);
+        g.installed=true;
+        setTimeout(()=>{
+          this.closeDetail();
+          this.renderAll();
+          this.updateInstalledCount();
+          this.showToast(g.title+' berhasil diinstal!');
+        },600);
+      }
+    },150);
+  },
+
+  /* --- LAUNCH (splash → boost → game) --- */
+  launchGame(id){
+    const g=DB.find(g=>g.id===id);
+    if(!g) return;
+    this.state.activeGameId=id;
+    this.closeDetail();
+
+    /* 1. Game Splash */
+    const splash=document.getElementById('game-splash');
+    const gsBg=document.getElementById('gs-bg');
+    const gsIcon=document.getElementById('gs-icon');
+    const gsTitle=document.getElementById('gs-title');
+    const gsDev=document.getElementById('gs-dev');
+    const gsBadge=document.getElementById('gs-badge');
+    const gsFill=document.getElementById('gs-fill');
+
+    const iconSrc=g.img?g.img:genIcon(g);
+    const bannerSrc=g.img?g.img:genBanner(g,400,225);
+    gsBg.style.backgroundImage=`url(${bannerSrc})`;
+    gsIcon.innerHTML=`<img src="${iconSrc}" alt="${g.title}" style="width:100%;height:100%;object-fit:cover;">`;
+    gsTitle.textContent=g.title;
+    gsDev.textContent=g.dev;
+    gsBadge.textContent=g.cat;
+    gsFill.style.width='0%';
+    gsFill.style.transition='none';
+    splash.classList.add('show');
+
+    /* Animate loading bar */
+    let p=0;
+    const iv=setInterval(()=>{
+      p+=Math.random()*8+4;
+      if(p>=100)p=100;
+      gsFill.style.transition='width 0.1s linear';
+      gsFill.style.width=p+'%';
+      if(p>=100){
+        clearInterval(iv);
+        /* 2. Boost screen */
+        setTimeout(()=>{
+          splash.classList.remove('show');
+          const boost=document.getElementById('boost-screen');
+          boost.classList.add('show');
+          setTimeout(()=>{
+            boost.classList.remove('show');
+            /* 3. Launch iframe */
+            const viewport=document.getElementById('game-viewport');
+            const frame=document.getElementById('game-frame');
+            const menuBtn=document.getElementById('game-menu-btn');
+            frame.src=g.url;
+            viewport.style.display='block';
+            menuBtn.style.display='flex';
+            document.getElementById('esb-game-name').textContent=g.title;
+            if(document.documentElement.requestFullscreen&&this.state.settings.fullscreen){
+              document.documentElement.requestFullscreen().catch(()=>{});
+            }
+          },900);
+        },400);
+      }
+    },80);
+  },
+
+  /* --- ENGINE MENU --- */
+  engine:{
+    menuOpen:false,
+    toggleMenu(){if(this.menuOpen)this.closeMenu();else this.openMenu();},
+    openMenu(){
+      this.menuOpen=true;
+      document.getElementById('engine-sidebar').classList.add('open');
+      document.getElementById('game-frame').style.filter=this._buildFilter()+'blur(6px) brightness(0.7)';
+      document.getElementById('menu-btn-icon').textContent='close';
+    },
+    closeMenu(){
+      this.menuOpen=false;
+      document.getElementById('engine-sidebar').classList.remove('open');
+      this.applyDisplay();
+      document.getElementById('menu-btn-icon').textContent='menu';
+    },
+    restart(){
+      const f=document.getElementById('game-frame');
+      const s=f.src;f.src='';
+      setTimeout(()=>f.src=s,100);
+      this.closeMenu();
+    },
+    toggleMute(el){el.classList.toggle('active');},
+    setRes(scale,el){
+      document.querySelectorAll('.res-chip').forEach(c=>c.classList.remove('active'));
+      el.classList.add('active');
+      const f=document.getElementById('game-frame');
+      f.style.transform=`scale(${scale})`;
+      f.style.transformOrigin='top left';
+      f.style.width=`${100/scale}%`;
+      f.style.height=`${100/scale}%`;
+    },
+    applyDisplay(){
+      const br=document.getElementById('sl-brightness').value;
+      const co=document.getElementById('sl-contrast').value;
+      const sa=document.getElementById('sl-saturate').value;
+      const hu=document.getElementById('sl-hue').value;
+      const ga=document.getElementById('sl-gamma').value;
+      document.getElementById('val-brightness').textContent=br+'%';
+      document.getElementById('val-contrast').textContent=co+'%';
+      document.getElementById('val-saturate').textContent=sa+'%';
+      document.getElementById('val-hue').textContent=hu+'deg';
+      document.getElementById('val-gamma').textContent=ga+'%';
+      const f=document.getElementById('game-frame');
+      if(!this.menuOpen){
+        f.style.filter=`brightness(${br/100}) contrast(${co/100}) saturate(${sa/100}) hue-rotate(${hu}deg) brightness(${ga/100})`;
+      }
+    },
+    _buildFilter(){
+      const br=document.getElementById('sl-brightness').value;
+      const co=document.getElementById('sl-contrast').value;
+      const sa=document.getElementById('sl-saturate').value;
+      const hu=document.getElementById('sl-hue').value;
+      return `brightness(${br/100}) contrast(${co/100}) saturate(${sa/100}) hue-rotate(${hu}deg) `;
+    },
+    resetDisplay(){
+      document.getElementById('sl-brightness').value=100;
+      document.getElementById('sl-contrast').value=100;
+      document.getElementById('sl-saturate').value=100;
+      document.getElementById('sl-hue').value=0;
+      document.getElementById('sl-gamma').value=100;
+      this.applyDisplay();
+    },
+    quit(){
+      const viewport=document.getElementById('game-viewport');
+      const frame=document.getElementById('game-frame');
+      const menuBtn=document.getElementById('game-menu-btn');
+      frame.src='about:blank';
+      frame.style.filter='none';
+      frame.style.transform='none';
+      frame.style.width='100%';
+      frame.style.height='100%';
+      viewport.style.display='none';
+      menuBtn.style.display='none';
+      this.closeMenu();
+      if(document.exitFullscreen)document.exitFullscreen().catch(()=>{});
+      app.state.activeGameId=null;
+    }
+  },
+
+  /* --- SETTINGS --- */
+  toggleSetting(el,key){el.classList.toggle('active');this.state.settings[key]=!this.state.settings[key];},
+  toggleTheme(el){
+    el.classList.toggle('active');
+    document.documentElement.setAttribute('data-theme',el.classList.contains('active')?'dark':'light');
+  },
+  setResolution(scale){
+    const f=document.getElementById('game-frame');
+    f.style.transform=`scale(${scale})`;
+    f.style.transformOrigin='top left';
+    f.style.width=`${100/scale}%`;
+    f.style.height=`${100/scale}%`;
+  },
+
+  /* --- MONITOR --- */
+  startMonitor(){
+    setInterval(()=>{
+      const cpu=Math.floor(4+Math.random()*22);
+      const mem=Math.floor(380+Math.random()*120);
+      const gpu=Math.floor(2+Math.random()*30);
+      const net=Math.floor(8+Math.random()*40);
+      this._setMon('cpu',cpu+'%',cpu);
+      this._setMon('mem',mem+' MB',mem/10);
+      this._setMon('gpu',gpu+'%',gpu);
+      this._setMon('net',net+' ms',net/2);
+    },2000);
+  },
+  _setMon(k,v,p){
+    const ve=document.getElementById(k+'-val');
+    const be=document.getElementById(k+'-bar');
+    if(ve)ve.textContent=v;
+    if(be)be.style.width=p+'%';
+  },
+
+  /* --- FPS --- */
+  startFPSCounter(){
+    setInterval(()=>{
+      const fps=Math.floor(56+Math.random()*8);
+      const el=document.getElementById('esb-fps');
+      if(el)el.innerHTML=`ENGINE &middot; <span>${fps}</span> FPS &middot; CORN v4.0`;
+    },1500);
+  },
+
+  /* --- TOAST --- */
+  showToast(msg){
+    const t=document.getElementById('toast');
+    document.getElementById('toast-msg').textContent=msg;
+    t.classList.add('show');
+    clearTimeout(this._tt);
+    this._tt=setTimeout(()=>t.classList.remove('show'),2500);
+  }
+};
+
+window.onload=()=>app.init();
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(document.getElementById('game-viewport').style.display==='block'){
+      if(app.engine.menuOpen)app.engine.closeMenu();
+      else app.engine.openMenu();
+    } else {
+      app.closeDetail();
+    }
+  }
+});
+</script>
+</body>
+</html>
